@@ -1,17 +1,39 @@
 //this code will enable all three arduino timer interrupts.
 //timer1 will interrupt at 1Hz
 
+#define HIHAT_DEFAULT {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+#define CYMBAL_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
+#define TOMTOM_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
+#define SNARE_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
+#define FLOORTOM_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
+#define HIHATFOOT_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
+#define BASSDRUM_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
+
+#define MSTOOCR1A_FACTOR (16000000.0)/(2000.0*1024.0)
 //storage variables
 bool toggle0 = 0;
 bool toggle1 = 0;
 bool toggle2 = 0;
-long int t2 = 0;
-long int t1 = 0;
+uint8_t stepCounter = 0;
+bool stepChanged = false;
+
+typedef struct{
+  bool hiHat[16];
+  bool cymbal[16];
+  bool tomTom[16];
+  bool snare[16];
+  bool bassDrum[16];
+  bool floorTom[16];
+  bool hiHatFoot[16];
+}stepSequencer_t;
+
+stepSequencer_t stepSeq = { HIHAT_DEFAULT, CYMBAL_DEFAULT, TOMTOM_DEFAULT, SNARE_DEFAULT, FLOORTOM_DEFAULT, HIHATFOOT_DEFAULT, BASSDRUM_DEFAULT };
+
 
 // Get the OCR1A value from the number of milliseconds for the loop
-long msToOcr1a(int milliseconds){
-  long result;
-  result = (16*pow(10,6)*milliseconds)/((long)2000*1024)-1;
+uint16_t msToOcr1a(int milliseconds){
+  uint16_t result;
+  result = MSTOOCR1A_FACTOR*milliseconds-1;
   return result;
 }
 
@@ -32,7 +54,7 @@ void setup() {
   TCCR1B = 0;// same for TCCR1B
   TCNT1  = 0;//initialize counter value to 0
   // set compare match register for 1hz increments
-  OCR1A = msToOcr1a(10); // set the milliseconds for the timer
+  OCR1A = msToOcr1a(500); // set the milliseconds for the timer
   // turn on CTC mode
   TCCR1B |= (1 << WGM12);
   // Set CS10 and CS12 bits for 1024 prescaler
@@ -46,11 +68,25 @@ void setup() {
 
 ISR(TIMER1_COMPA_vect) {  //timer1 interrupt 1Hz toggles pin 13 (LED)
                           //generates pulse wave of frequency 1Hz/2 = 0.5kHz (takes two cycles for full wave- toggle high then toggle low)
-  if (toggle1) {
+  
+  stepCounter++;
+  if (stepCounter == 16) stepCounter = 0;
+  stepChanged = true;
+
+
+  /*if (toggle1) {
     digitalWrite(13, HIGH);
-    t2 = millis();
+    long int t2 = millis();
+    static long int t1 = 0;
+    Serial.print("t2: ");
+    Serial.println(t2);
+    Serial.print("t1: ");
+    Serial.println(t1);
+    long int tresult = t2 - t1;
+
     Serial.print("high: ");
-    Serial.print(t2 - t1);
+
+    Serial.print(tresult);
     t1 = t2;
     Serial.println(" milliseconds");
     toggle1 = 0;
@@ -59,8 +95,23 @@ ISR(TIMER1_COMPA_vect) {  //timer1 interrupt 1Hz toggles pin 13 (LED)
   else {
     digitalWrite(13, LOW);
     toggle1 = 1;
-  }
+  }*/
 }
-
 void loop() {
+  if(stepChanged){
+    //TODO por todos os gpios a low e atualizar com o valor correto (avaliar se precisa de um timer)
+    digitalWrite(13, LOW);
+    delay(50); // isto terá de ser relativo á frequência (que percentagem da duração do step fica a low)
+    Serial.println("^_^");
+    Serial.println(stepCounter);
+    Serial.println(stepSeq.hiHat[stepCounter]);   
+    digitalWrite(13, stepSeq.hiHat[stepCounter]);
+    Serial.println(stepSeq.cymbal[stepCounter]);   
+    Serial.println(stepSeq.tomTom[stepCounter]);   
+    Serial.println(stepSeq.snare[stepCounter]);   
+    Serial.println(stepSeq.bassDrum[stepCounter]);   
+    Serial.println(stepSeq.floorTom[stepCounter]);   
+    Serial.println(stepSeq.hiHatFoot[stepCounter]);
+    stepChanged=false;
+  }
 }
