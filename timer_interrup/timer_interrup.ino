@@ -25,7 +25,7 @@ const byte numBytes = 5;
 byte receivedBytes[numBytes];
 byte numReceived = 0;
 bool newData = false;
-bool set_array = true;
+bool runSequencer = false;
 
 // step sequencer data structure
 typedef struct {
@@ -48,7 +48,7 @@ void recvSequence() {
   byte startMarker = 0x3C;
   byte endMarker = 0x3E;
   byte receivedByte;
-
+Serial.write(("here"));
   while (Serial.available() > 0 && newData == false) {
     receivedByte = Serial.read();
 
@@ -86,7 +86,7 @@ void saveNewData() {
         stepSeq.hiHat[i] = (receivedBytes[2] & (0x80 >> (i - 8))) ? true : false;
       }
     }
-    set_array = false;
+    runSequencer = true;
   }
     newData = false;
 }
@@ -136,11 +136,11 @@ ISR(TIMER1_COMPA_vect) {
 }
 
 void loop() {
-  if (set_array) {
+  if (Serial.available()>0) {
     recvSequence();
     saveNewData();
 } 
-  else {
+  else if (runSequencer){
     if (stepChanged) {
       //TODO por todos os gpios a low e atualizar com o valor correto (avaliar se precisa de um timer)
       digitalWrite(13, LOW);
