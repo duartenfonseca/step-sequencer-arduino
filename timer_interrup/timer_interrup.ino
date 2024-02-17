@@ -2,7 +2,7 @@
 //timer1 will interrupt at 1Hz
 
 #define HIHAT_DEFAULT {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
-#define CYMBAL_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
+#define CYMBAL_DEFAULT {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 #define TOMTOM_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
 #define SNARE_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
 #define FLOORTOM_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
@@ -11,11 +11,16 @@
 
 #define MSTOOCR1A_FACTOR (16000000.0)/(2000.0*1024.0)
 //storage variables
-bool toggle0 = 0;
 bool toggle1 = 0;
-bool toggle2 = 0;
 uint8_t stepCounter = 0;
 bool stepChanged = false;
+
+// 
+const byte numBytes = 32;
+byte receivedBytes[numBytes];
+byte numReceived = 0;
+
+boolean newData = false;
 
 typedef struct{
   bool hiHat[16];
@@ -25,6 +30,7 @@ typedef struct{
   bool bassDrum[16];
   bool floorTom[16];
   bool hiHatFoot[16];
+  byte incomingArray[16];
 }stepSequencer_t;
 
 stepSequencer_t stepSeq = { HIHAT_DEFAULT, CYMBAL_DEFAULT, TOMTOM_DEFAULT, SNARE_DEFAULT, FLOORTOM_DEFAULT, HIHATFOOT_DEFAULT, BASSDRUM_DEFAULT };
@@ -36,6 +42,8 @@ uint16_t msToOcr1a(int milliseconds){
   result = MSTOOCR1A_FACTOR*milliseconds-1;
   return result;
 }
+
+
 
 void setup() {
 
@@ -64,18 +72,90 @@ void setup() {
 
   sei();  //allow interrupts
 }  //end setup
+void recvBytesWithStartEndMarkers() {
+    static boolean recvInProgress = false;
+    static byte ndx = 0;
+    byte startMarker = 0x3C;
+    byte endMarker = 0x3E;
+    byte rb;
+   
 
+    while (Serial.available() > 0 && newData == false) {
+        rb = Serial.read();
+
+        if (recvInProgress == true) {
+            if (rb != endMarker) {
+                receivedBytes[ndx] = rb;
+                ndx++;
+                if (ndx >= numBytes) {
+                    ndx = numBytes - 1;
+                }
+            }
+            else {
+                receivedBytes[ndx] = '\0'; // terminate the string
+                recvInProgress = false;
+                numReceived = ndx;  // save the number for use when printing
+                ndx = 0;
+                newData = true;
+            }
+        }
+
+        else if (rb == startMarker) {
+            recvInProgress = true;
+        }
+    }
+}
+
+void showNewData() {
+    if (newData == true) {
+        Serial.print("This just in (HEX values)... ");
+        for (byte n = 0; n < numReceived; n++) {
+            Serial.print(receivedBytes[n], HEX);
+            Serial.print(' ');
+        }
+        Serial.println();
+        newData = false;
+    }
+}
 ISR(TIMER1_COMPA_vect) {  //timer1 interrupt 1Hz toggles pin 13 (LED)
                           //generates pulse wave of frequency 1Hz/2 = 0.5kHz (takes two cycles for full wave- toggle high then toggle low)
   stepCounter++;
   if (stepCounter == 16) stepCounter = 0;
   stepChanged = true;
-}
 
+
+  if (toggle1) {
+    digitalWrite(13, HIGH);
+    long int t2 = millis();
+    static long int t1 = 0;
+    Serial.print("t2: ");
+    Serial.println(t2);
+    Serial.print("t1: ");
+    Serial.println(t1);
+    long int tresult = t2 - t1;
+
+    Serial.print("high: ");
+
+    Serial.print(tresult);
+    t1 = t2;
+    Serial.println(" milliseconds");
+    toggle1 = 0;
+  }
+
+  else {
+    digitalWrite(13, LOW);
+    toggle1 = 1;
+  }
+}
 void loop() {
+  recvBytesWithStartEndMarkers();
+  showNewData();
+  
   if(stepChanged){
     //TODO por todos os gpios a low e atualizar com o valor correto (avaliar se precisa de um timer)
-    digitalWrite(13, LOW);
+
+ 
+ digitalWrite(13, LOW);
     delay(50); // isto terá de ser relativo á frequência (que percentagem da duração do step fica a low)
     Serial.println("^_^");
     Serial.println(stepCounter);
