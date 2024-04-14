@@ -30,7 +30,6 @@ typedef struct{
   bool bassDrum[16];
   bool floorTom[16];
   bool hiHatFoot[16];
-  byte incomingArray[16];
 }stepSequencer_t;
 
 stepSequencer_t stepSeq = { HIHAT_DEFAULT, CYMBAL_DEFAULT, TOMTOM_DEFAULT, SNARE_DEFAULT, FLOORTOM_DEFAULT, HIHATFOOT_DEFAULT, BASSDRUM_DEFAULT };
@@ -46,7 +45,6 @@ uint16_t msToOcr1a(int milliseconds){
 
 
 void setup() {
-
   pinMode(8, OUTPUT);
   pinMode(9, OUTPUT);
   pinMode(13, OUTPUT);
@@ -72,6 +70,8 @@ void setup() {
 
   sei();  //allow interrupts
 }  //end setup
+
+// Create a signal receiver class for this function
 void recvBytesWithStartEndMarkers() {
     static boolean recvInProgress = false;
     static byte ndx = 0;
@@ -106,6 +106,7 @@ void recvBytesWithStartEndMarkers() {
     }
 }
 
+// Create a signal receiver class for this function
 void showNewData() {
     if (newData == true) {
         Serial.print("This just in (HEX values)... ");
@@ -117,45 +118,21 @@ void showNewData() {
         newData = false;
     }
 }
+
 ISR(TIMER1_COMPA_vect) {  //timer1 interrupt 1Hz toggles pin 13 (LED)
                           //generates pulse wave of frequency 1Hz/2 = 0.5kHz (takes two cycles for full wave- toggle high then toggle low)
   stepCounter++;
   if (stepCounter == 16) stepCounter = 0;
   stepChanged = true;
-
-
-  if (toggle1) {
-    digitalWrite(13, HIGH);
-    long int t2 = millis();
-    static long int t1 = 0;
-    Serial.print("t2: ");
-    Serial.println(t2);
-    Serial.print("t1: ");
-    Serial.println(t1);
-    long int tresult = t2 - t1;
-
-    Serial.print("high: ");
-
-    Serial.print(tresult);
-    t1 = t2;
-    Serial.println(" milliseconds");
-    toggle1 = 0;
-  }
-
-  else {
-    digitalWrite(13, LOW);
-    toggle1 = 1;
-  }
 }
+
 void loop() {
   recvBytesWithStartEndMarkers();
   showNewData();
   
   if(stepChanged){
     //TODO por todos os gpios a low e atualizar com o valor correto (avaliar se precisa de um timer)
-
- 
- digitalWrite(13, LOW);
+    digitalWrite(13, LOW);
     delay(50); // isto terá de ser relativo á frequência (que percentagem da duração do step fica a low)
     Serial.println("^_^");
     Serial.println(stepCounter);
