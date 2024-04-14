@@ -4,7 +4,7 @@
 #define NEW_CONFIG_VERSION "NEW"
 #define CONFIG_VERSION_SIZE 4  // plus one for null termination
 
-// Where in EEPROM?
+// EEPROM MEMORY starting position
 #define CONFIG_START 32
 #define DEFAULT_SEQUENCE 255
 #define DEFAULT_SEQUENCE_ALL \
