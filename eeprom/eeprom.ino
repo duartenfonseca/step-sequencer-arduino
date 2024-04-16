@@ -54,12 +54,42 @@ typedef struct stepSequencer_t {
     hiHat2[1] = a[15];
     return *this;
   }
+  printConfig(){
+    Serial.println("///////////// PRINTING CONFIG \\\\\\\\\\\\\\\\\\");
+    Serial.print("hiHat: ");
+    Serial.print(hiHat[0],BIN);
+    Serial.println(hiHat[1],BIN);
+    Serial.print("cymbal: ");
+    Serial.print(cymbal[0],BIN);
+    Serial.println(cymbal[1],BIN);
+    Serial.print("tomTom: ");
+    Serial.print(tomTom[0],BIN);
+    Serial.println(tomTom[1],BIN);
+    Serial.print("snare: ");
+    Serial.print(snare[0],BIN);
+    Serial.println(snare[1],BIN);
+    Serial.print("bassDrum: ");
+    Serial.print(bassDrum[0],BIN);
+    Serial.println(bassDrum[1],BIN);
+    Serial.print("floorTom: ");
+    Serial.print(floorTom[0],BIN);
+    Serial.println(floorTom[1],BIN);
+    Serial.print("hiHatFoot: ");
+    Serial.print(hiHatFoot[0],BIN);
+    Serial.println(hiHatFoot[1],BIN);
+    Serial.print("hiHat2: ");
+    Serial.print(hiHat2[0],BIN);
+    Serial.println(hiHat2[1],BIN);
+  }
 };
 
 typedef struct
 {
   char config_vers[CONFIG_VERSION_SIZE] = DEFAULT_CONFIG_VERSION;
   stepSequencer_t stepSequence = DEFAULT_SEQUENCE_ALL;
+  void printSequence() {
+    stepSequence.printConfig();
+  }
 } configuration_type;
 
 
@@ -112,10 +142,16 @@ private:
 
   // TODO: falta adicionar o resto do load, da parte da sequência. trocar para guardar a seq num array
   void loadConfig() {
+    byte teste[16];
+    // lê a versão
     readEeprom(CONFIG_START, CONFIG_VERSION_SIZE, currentConfig.config_vers);
-    // readEeprom(CONFIG_START+CONFIG_VERSION_SIZE, CONFIG_START+CONFIG_VERSION_SIZE + 1, currentConfig.stepSequence[0]);
+    // lê a sequência
+    readEeprom(CONFIG_START+CONFIG_VERSION_SIZE, 16, teste);
+    currentConfig.stepSequence = teste;
+
     Serial.println(currentConfig.config_vers);
-    // Serial.println(currentConfig.stepSequence[0]);
+    currentConfig.printSequence();
+
   }
 
   // save config só vai buscar ao que está guardado na struct e envia para o eeprom, mudar. depois replicar o que pensei
