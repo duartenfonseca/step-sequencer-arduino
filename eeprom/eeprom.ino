@@ -21,6 +21,10 @@ struct type_of_size {
   typedef char type[N];
 };
 
+void printBin(byte aByte) {
+  for (int8_t aBit = 7; aBit >= 0; aBit--)
+    Serial.write(bitRead(aByte, aBit) ? '1' : '0');
+}
 template<typename T, size_t Size>
 typename type_of_size<Size>::type& sizeof_array_helper(T (&)[Size]);
 #define sizeof_array(pArray) sizeof(sizeof_array_helper(pArray))
@@ -54,32 +58,41 @@ typedef struct stepSequencer_t {
     hiHat2[1] = a[15];
     return *this;
   }
+
   printConfig(){
     Serial.println("///////////// PRINTING CONFIG \\\\\\\\\\\\\\\\\\");
-    Serial.print("hiHat: ");
-    Serial.print(hiHat[0],BIN);
-    Serial.println(hiHat[1],BIN);
-    Serial.print("cymbal: ");
-    Serial.print(cymbal[0],BIN);
-    Serial.println(cymbal[1],BIN);
-    Serial.print("tomTom: ");
-    Serial.print(tomTom[0],BIN);
-    Serial.println(tomTom[1],BIN);
-    Serial.print("snare: ");
-    Serial.print(snare[0],BIN);
-    Serial.println(snare[1],BIN);
-    Serial.print("bassDrum: ");
-    Serial.print(bassDrum[0],BIN);
-    Serial.println(bassDrum[1],BIN);
-    Serial.print("floorTom: ");
-    Serial.print(floorTom[0],BIN);
-    Serial.println(floorTom[1],BIN);
+    Serial.print("hiHat:     ");
+    printBin(hiHat[0]);
+    printBin(hiHat[1]);
+    Serial.println("");
+    Serial.print("cymbal:    ");
+    printBin(cymbal[0]);
+    printBin(cymbal[1]);
+    Serial.println("");
+    Serial.print("tomTom:    ");
+    printBin(tomTom[0]);
+    printBin(tomTom[1]);
+    Serial.println("");
+    Serial.print("snare:     ");
+    printBin(snare[0]);
+    printBin(snare[1]);
+    Serial.println("");
+    Serial.print("bassDrum:  ");
+    printBin(bassDrum[0]);
+    printBin(bassDrum[1]);
+    Serial.println("");
+    Serial.print("floorTom:  ");
+    printBin(floorTom[0]);
+    printBin(floorTom[1]);
+    Serial.println("");
     Serial.print("hiHatFoot: ");
-    Serial.print(hiHatFoot[0],BIN);
-    Serial.println(hiHatFoot[1],BIN);
-    Serial.print("hiHat2: ");
-    Serial.print(hiHat2[0],BIN);
-    Serial.println(hiHat2[1],BIN);
+    printBin(hiHatFoot[0]);
+    printBin(hiHatFoot[1]);
+    Serial.println("");
+    Serial.print("hiHat2:    ");
+    printBin(hiHat2[0]);
+    printBin(hiHat2[1]);
+    Serial.println("");
   }
 };
 
@@ -87,8 +100,27 @@ typedef struct
 {
   char config_vers[CONFIG_VERSION_SIZE] = DEFAULT_CONFIG_VERSION;
   stepSequencer_t stepSequence = DEFAULT_SEQUENCE_ALL;
+
   void printSequence() {
     stepSequence.printConfig();
+  }
+  void convertToBytes(byte* a){
+    a[0] = stepSequence.hiHat[0];
+    a[1] = stepSequence.hiHat[1];
+    a[2] = stepSequence.cymbal[0];
+    a[3] = stepSequence.cymbal[1];
+    a[4] = stepSequence.tomTom[0];
+    a[5] = stepSequence.tomTom[1];
+    a[6] = stepSequence.snare[0];
+    a[7] = stepSequence.snare[1];
+    a[8] = stepSequence.bassDrum[0];
+    a[9] = stepSequence.bassDrum[1];
+    a[10] = stepSequence.floorTom[0];
+    a[11] = stepSequence.floorTom[1];
+    a[12] = stepSequence.hiHatFoot[0];
+    a[13] = stepSequence.hiHatFoot[1];
+    a[14] = stepSequence.hiHat2[0];
+    a[15] = stepSequence.hiHat2[1];
   }
 } configuration_type;
 
@@ -142,27 +174,30 @@ private:
 
   // TODO: falta adicionar o resto do load, da parte da sequência. trocar para guardar a seq num array
   void loadConfig() {
-    byte teste[16];
+    byte sequenceFromEeprom[16];
     // lê a versão
     readEeprom(CONFIG_START, CONFIG_VERSION_SIZE, currentConfig.config_vers);
     // lê a sequência
-    readEeprom(CONFIG_START+CONFIG_VERSION_SIZE, 16, teste);
-    currentConfig.stepSequence = teste;
+    readEeprom(CONFIG_START+CONFIG_VERSION_SIZE, 16, sequenceFromEeprom);
+    currentConfig.stepSequence = sequenceFromEeprom;
 
     Serial.println(currentConfig.config_vers);
     currentConfig.printSequence();
-
   }
 
   // save config só vai buscar ao que está guardado na struct e envia para o eeprom, mudar. depois replicar o que pensei
   // para o load
   void saveConfig(char option[], unsigned int writeStart) {
-    byte byteArray[2];
+    Serial.println("saveConfig");
+    byte sequenceToEeprom[16];
 
-    // convertSequenceToBytes(currentConfig.stepSequence,sizeof_array(currentConfig.stepSequence),byteArray);
+    currentConfig.convertToBytes(sequenceToEeprom);
+    Serial.println(sequenceToEeprom[15],BIN);
+    Serial.println(sequenceToEeprom[14],BIN);
+    Serial.println(sequenceToEeprom[13],BIN);
+
     saveStringOnEeprom(option, writeStart);
-    saveEeprom(byteArray, sizeof_array(byteArray), writeStart + CONFIG_VERSION_SIZE);
-    saveEeprom(byteArray, sizeof_array(byteArray), writeStart + CONFIG_VERSION_SIZE + sizeof_array(byteArray));
+    saveEeprom(sequenceToEeprom, 16, writeStart + CONFIG_VERSION_SIZE);
   }
 
 public:
@@ -191,11 +226,11 @@ public:
     }
 
     saveConfig(action,CONFIG_START);
-
     // se nenhuma config foi pedida dar erro?
+    currentConfig.printSequence();
+    
     return;
   }
-
 };
 
 
@@ -204,9 +239,9 @@ void setup() {
   Serial.println("Hello world!");  // prints hello with ending line break
 
   Eeprom_t EepromReader;
-  byte seq[16] = { 1, 1, 255, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+  byte seq[16] = { 0, 0, 0, 0, 0, 0, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  EepromReader.executeAction("ASD", seq);
+  EepromReader.executeAction("NEW", seq);
 }
 
 void loop() {
