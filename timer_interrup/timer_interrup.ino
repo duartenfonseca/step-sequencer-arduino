@@ -22,6 +22,7 @@ byte numReceived = 0;
 
 boolean newData = false;
 
+
 typedef struct{
   bool hiHat[16];
   bool cymbal[16];
@@ -37,9 +38,7 @@ stepSequencer_t stepSeq = { HIHAT_DEFAULT, CYMBAL_DEFAULT, TOMTOM_DEFAULT, SNARE
 
 // Get the OCR1A value from the number of milliseconds for the loop
 uint16_t msToOcr1a(int milliseconds){
-  uint16_t result;
-  result = MSTOOCR1A_FACTOR*milliseconds-1;
-  return result;
+  return MSTOOCR1A_FACTOR*milliseconds-1;
 }
 
 
@@ -52,15 +51,13 @@ void setup() {
   // Baud Rate
   Serial.begin(115200);
 
-  // Auxiliar variable to check timing of interrupt
-  long int t1 = millis();
 
   cli();  //stop interrupts
   TCCR1A = 0;// set entire TCCR1A register to 0
   TCCR1B = 0;// same for TCCR1B
   TCNT1  = 0;//initialize counter value to 0
   // set compare match register for 1hz increments
-  OCR1A = msToOcr1a(500); // set the milliseconds for the timer
+  OCR1A = msToOcr1a(1000); // set the milliseconds for the timer
   // turn on CTC mode
   TCCR1B |= (1 << WGM12);
   // Set CS10 and CS12 bits for 1024 prescaler
@@ -78,7 +75,6 @@ void recvBytesWithStartEndMarkers() {
     byte startMarker = 0x3C;
     byte endMarker = 0x3E;
     byte rb;
-   
 
     while (Serial.available() > 0 && newData == false) {
         rb = Serial.read();
