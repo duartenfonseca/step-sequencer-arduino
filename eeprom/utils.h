@@ -21,10 +21,8 @@ namespace utils {
 // print each bit of a byte
 void printBin(const byte &aByte);
 
-// print two bytes that make up a sequence of an instrument
-void printSequence(const String &instrumentName,byte * instrumentSequence);
-
-
+// prints the sequence of an instrument
+void printSequence(uint16_t instrumentSequence);
 }
 
 #endif
