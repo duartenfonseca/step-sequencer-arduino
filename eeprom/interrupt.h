@@ -21,8 +21,6 @@ public:
     stepCycle = false;
   }
   void setupInterrupt(const int &frequencyMs);
-
-
 };
 
 

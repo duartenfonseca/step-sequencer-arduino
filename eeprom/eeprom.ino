@@ -4,6 +4,8 @@
 #include "utils.h"
 #include "eeprom.h"
 #include "interrupt.h"
+#include "stepsequencer.h"
+
 
 // remover esta parte ________________
 
@@ -14,21 +16,6 @@
 #define FLOORTOM_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
 #define HIHATFOOT_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
 #define BASSDRUM_DEFAULT {1,1,0,1,0,0,0,0,0,1,1,1,0,1,0,1}
-
-
-typedef struct{
-  bool hiHat[16];
-  bool cymbal[16];
-  bool tomTom[16];
-  bool snare[16];
-  bool bassDrum[16];
-  bool floorTom[16];
-  bool hiHatFoot[16];
-}stepSequencer_t;
-
-stepSequencer_t stepSeq = { HIHAT_DEFAULT, CYMBAL_DEFAULT, TOMTOM_DEFAULT, SNARE_DEFAULT, FLOORTOM_DEFAULT, HIHATFOOT_DEFAULT, BASSDRUM_DEFAULT };
-
-// remover esta parte ________________ ^^^^
 
 
 interrupt::interruptCycle cycleRunner;
@@ -50,9 +37,29 @@ void setup() {
   Serial.begin(9600);
 
   eeprom::Eeprom_t EepromReader;
-  byte seq[16] = { 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 255, 0, 0, 0, 0, 0 };
+  uint16_t seq[8] = { 0x11FF, 0, 20, 0xDDDD, 0, 5, 0, 0};
+  uint16_t new_seq[8];
+  EepromReader.processSequence("NEW", seq);
+  EepromReader.getSequence(new_seq);
+  EepromReader.printSequence();
+  utils::printSequence(new_seq[0]);
+  stepsequencer::stepSequencer_t newSequence;
+  // newSequence=new_seq;
+  // newSequence.print();
+  // byte string_byte[2];
+  // byte array[2];
+  // uint16_t value=0xAAFF;
+  // string_byte[0] = 0xAA;
+  // string_byte[1] = 0xFF;
+  // array[0]=(value >> 8);
+  // array[1]=value & 0xff;
+  // Serial.println("here");
+  // for (int i = 0; i < 2; i++) {
+  //     Serial.println(string_byte[i],HEX);
+  //     Serial.println(array[i],HEX);
+  // }
 
-  EepromReader.executeAction("NEW", seq);
+
 }
 
 void loop() {
@@ -61,10 +68,9 @@ void loop() {
       //TODO por todos os gpios a low e atualizar com o valor correto (avaliar se precisa de um timer)
       digitalWrite(13, LOW);
       delay(50); // isto terá de ser relativo á frequência (que percentagem da duração do step fica a low)
-      Serial.println("^_^");
-      Serial.println(cycleRunner.stepCycle);
-
-      Serial.println(stepSeq.hiHat[cycleRunner.stepCounter]);   
+      // Serial.println("^_^");
+      // Serial.println(cycleRunner.stepCycle);
+      // Serial.println(stepSeq.hiHat[cycleRunner.stepCounter]);   
       // Serial.println(stepSeq.hiHat[cycleRunner.stepCounter]);   
       // digitalWrite(13, stepSeq.hiHat[cycleRunner.stepCounter]);
       // Serial.println(stepSeq.cymbal[cycleRunner.stepCounter]);   
