@@ -18,11 +18,22 @@ typename type_of_size<Size>::type& sizeof_array_helper(T (&)[Size]);
 
 namespace utils {
 
-// print each bit of a byte
-void printBin(const byte &aByte);
+// Print binary representation of a uint16
+void printUint16(const uint16_t &aUint16);
 
-// prints the sequence of an instrument
-void printSequence(uint16_t instrumentSequence);
+// prints the sequence of an instrument as uint16
+void printSequence(const uint16_t &instrumentSequence);
+
+// prints the sequence of an instrument as bool array
+void printSequence(bool instrumentSequence[]);
+
+template <typename Func>
+// helper function to process each bit in a uint16_t
+void  processBits(const uint16_t &aUint16, Func func) {
+  for (int8_t aBit = 15; aBit >= 0; aBit--) {
+    func(bitRead(aUint16, aBit), 15 - aBit); // Pass the bit value and position
+  }
+}
 }
 
 #endif

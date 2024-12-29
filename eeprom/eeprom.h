@@ -14,10 +14,16 @@ namespace eeprom {
 // Reads saved eeprom bytes and saves them on outputBuffer 
 void readCharFromEeprom(int readStart, int readSize, char* outputBuffer);
 
-// Save bytes into eeprom
-void saveEeprom(byte string[], size_t arraySize, unsigned int writeStart);
+// Read bytes from EEPROM and convert it to a uint16 array
+void readU16ArrayFromEeprom(int readStart, int readSize, uint16_t* outputBuffer);
 
-// Save strings (w null termination) to eeprom
+// Save a byte on EEPROM
+void saveByteOnEeprom(byte l_byte, unsigned int readPosition);
+
+// Save a uint16 array on EEPROM
+void saveU16ArrayOnEeprom(uint16_t* string, size_t arraySize, unsigned int writeStart);
+
+// Save strings (w null termination) to EEPROM
 void saveStringOnEeprom(byte string[], size_t arraySize, unsigned int writeStart);
 
 // Prints current bytes on eeprom
@@ -26,8 +32,8 @@ void printEeprom(int numberOfBytes);
 
 class Eeprom_t {
 private:
-  uint16_t saved_sequence[CONFIG_SEQUENCE_SIZE];
-  char config_vers[CONFIG_VERSION_SIZE] = "";
+  uint16_t savedSequence[CONFIG_SEQUENCE_SIZE];
+  char savedAction[CONFIG_ACTION_SIZE] = "";
 
   // load config from EEPROM and save on currentConfig
   void loadConfig();
@@ -36,7 +42,9 @@ private:
   void saveConfig(char option[], unsigned int writeStart);
 
 public:
-  Eeprom_t() = default;
+  Eeprom_t(){
+    loadConfig();
+  }
 
   // Receives an action
   // - if NEW: save new sequence

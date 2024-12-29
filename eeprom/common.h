@@ -8,9 +8,9 @@
 ////////////////////////////////    EEPROM   \\\\\\\\\\\\\\\\\\\\\\\\\\
 
 // Config definitions
-#define DEFAULT_CONFIG_VERSION "DEF"
-#define NEW_CONFIG_VERSION "NEW"
-#define CONFIG_VERSION_SIZE 4  // three plus one for null termination
+#define DEFAULT_CONFIG_ACTION "DEF"
+#define NEW_CONFIG_ACTION "NEW"
+#define CONFIG_ACTION_SIZE 4  // three plus one for null termination
 #define CONFIG_SEQUENCE_SIZE 8
 
 // EEPROM memory starting position
