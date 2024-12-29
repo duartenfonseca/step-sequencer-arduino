@@ -8,7 +8,7 @@ namespace eeprom {
     }
   }
 
-  void read16BitFromEeprom(int readStart, int readSize, uint16_t* outputBuffer) {
+  void readU16ArrayFromEeprom(int readStart, int readSize, uint16_t* outputBuffer) {
     // EEPROM (char)           0xff 0xff
     // outputBuffer (uint16_t) 0xffff
     for (int i = 0; i < readSize/2; i++) {
@@ -23,19 +23,18 @@ namespace eeprom {
         EEPROM.write(readPosition, l_byte);
       }
   }
-  void saveArrayOnEeprom(byte* string, size_t arraySize, unsigned int writeStart){
-    for (size_t i = 0; i < arraySize; i++) {
-      saveByteOnEeprom(string[i],writeStart+i);
-    }
-  }
-  void save16BitArrayOnEeprom(uint16_t* string, size_t arraySize, unsigned int writeStart){
+ 
+  void saveU16ArrayOnEeprom(uint16_t* string, size_t arraySize, unsigned int writeStart){
     for (size_t i = 0; i < arraySize; i++) {
       saveByteOnEeprom((string[i] >> 8),writeStart +2*i);
       saveByteOnEeprom((string[i] & 0xff),writeStart +2*i +1);
     }
   }
+  
   void saveStringOnEeprom(byte* string, size_t arraySize, unsigned int writeStart) {
-    saveArrayOnEeprom(string, arraySize, writeStart);
+    for (size_t i = 0; i < arraySize; i++) {
+      saveByteOnEeprom(string[i],writeStart+i);
+    }
 
     //write the NULL termination
     if (EEPROM.read(writeStart + arraySize) != 0)
@@ -51,85 +50,63 @@ namespace eeprom {
       ((i < 3) ? Serial.println((char)stringToPrint[i]) : Serial.println(stringToPrint[i], HEX));
     }
   }
-  
-  // void configuration_t::convertToBytes(byte* inputString){
-  //   inputString[0] = stepSequence.hiHat[0];
-  //   inputString[1] = stepSequence.hiHat[1];
-  //   inputString[2] = stepSequence.cymbal[0];
-  //   inputString[3] = stepSequence.cymbal[1];
-  //   inputString[4] = stepSequence.tomTom[0];
-  //   inputString[5] = stepSequence.tomTom[1];
-  //   inputString[6] = stepSequence.snare[0];
-  //   inputString[7] = stepSequence.snare[1];
-  //   inputString[8] = stepSequence.bassDrum[0];
-  //   inputString[9] = stepSequence.bassDrum[1];
-  //   inputString[10] = stepSequence.floorTom[0];
-  //   inputString[11] = stepSequence.floorTom[1];
-  //   inputString[12] = stepSequence.hiHatFoot[0];
-  //   inputString[13] = stepSequence.hiHatFoot[1];
-  //   inputString[14] = stepSequence.hiHat2[0];
-  //   inputString[15] = stepSequence.hiHat2[1];
-  // }
 
   void Eeprom_t::loadConfig() {
-    uint16_t sequenceFromEeprom[8];
-
     // read version
-    readCharFromEeprom(CONFIG_START, CONFIG_VERSION_SIZE, config_vers);
+    readCharFromEeprom(CONFIG_START, CONFIG_ACTION_SIZE, savedAction);
 
     // read sequence
-    read16BitFromEeprom(CONFIG_START+CONFIG_VERSION_SIZE, 16, saved_sequence);
-
-    printEeprom(20);
+    readU16ArrayFromEeprom(CONFIG_START+CONFIG_ACTION_SIZE, 16, savedSequence);
   }
 
   void Eeprom_t::saveConfig(char option[], unsigned int writeStart) {
     saveStringOnEeprom(option,strlen(option), writeStart);
-    save16BitArrayOnEeprom(saved_sequence, 8, writeStart + CONFIG_VERSION_SIZE);
+    saveU16ArrayOnEeprom(savedSequence, 8, writeStart + CONFIG_ACTION_SIZE);
   }
 
-  void Eeprom_t::processSequence(char action[3], uint16_t new_sequence[8] = NULL) {
+  void Eeprom_t::processSequence(char newAction[3], uint16_t newSequence[8] = NULL) {
     // Load saved config
     loadConfig();
-    uint16_t default_sequence[CONFIG_SEQUENCE_SIZE] = DEFAULT_SEQUENCE_ALL;
+    uint16_t defaultSequence[CONFIG_SEQUENCE_SIZE] = DEFAULT_SEQUENCE_ALL;
 
     // if action is default, save default configuration
-    if ((strcmp(action, DEFAULT_CONFIG_VERSION) == 0)) {
-      if (strcmp(config_vers, action) == 0) {
+    if ((strcmp(newAction, DEFAULT_CONFIG_ACTION) == 0)) {
+      if (strcmp(savedAction, newAction) == 0) {
         return;
       }
-      if ((strlcpy(config_vers, action, CONFIG_VERSION_SIZE))>= CONFIG_VERSION_SIZE){
+      if ((strlcpy(savedAction, newAction, CONFIG_ACTION_SIZE))>= CONFIG_ACTION_SIZE){
         Serial.println("Error reading saving config version: Action string too big");
       }
       for (int i = 0; i < CONFIG_SEQUENCE_SIZE; i++) {
-        saved_sequence[i] = default_sequence[i];
+        savedSequence[i] = defaultSequence[i];
       }
     }
 
     // if action is NEW, save the new sequence on the EEPROM
-    else if (strcmp(action, NEW_CONFIG_VERSION) == 0) {
-      if((strlcpy(config_vers, action, CONFIG_VERSION_SIZE))>= CONFIG_VERSION_SIZE){
+    else if (strcmp(newAction, NEW_CONFIG_ACTION) == 0) {
+      if((strlcpy(savedAction, newAction, CONFIG_ACTION_SIZE))>= CONFIG_ACTION_SIZE){
         Serial.println("Error reading saving config version: Action string too big");
       }
       
       for (int i = 0; i < 8; i++) {
-        saved_sequence[i] = new_sequence[i];
+        savedSequence[i] = newSequence[i];
       }
     }
     printEeprom(20);
-    saveConfig(action,CONFIG_START);
+    saveConfig(newAction,CONFIG_START);
     return;
   }
 
   void Eeprom_t::getSequence(uint16_t *sequence){
     for (int i = 0; i < CONFIG_SEQUENCE_SIZE; i++) {
-      sequence[i] = saved_sequence[i];
+      sequence[i] = savedSequence[i];
     }
   }
 
   void Eeprom_t::printSequence(){
+    Serial.println("///////////// PRINTING SAVED SEQUENCE \\\\\\\\\\\\\\\\\\");
     for (int i = 0; i < CONFIG_SEQUENCE_SIZE; i++) {
-      utils::printSequence(saved_sequence[i]);
+      utils::printSequence(savedSequence[i]);
     }
   }
 }
