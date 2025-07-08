@@ -13,13 +13,9 @@ uint16_t msToOcr1a(const int &milliseconds);
 
 class interruptCycle {
 public:
-  int stepCounter;
-  bool stepCycle;
+  int stepCounter {0};
+  bool stepCycle{false};
 
-  interruptCycle(){
-    stepCounter = 0;
-    stepCycle = false;
-  }
   void setupInterrupt(const int &frequencyMs);
 };
 

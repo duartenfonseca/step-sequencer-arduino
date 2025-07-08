@@ -13,7 +13,7 @@ void stepSequencer_t::printSequence(){
   utils::printSequence(hiHat2);
 }
 
-void stepSequencer_t::saveSequence(uint16_t sequence[8])
+void stepSequencer_t::saveSequence(uint16_t sequence[CONFIG_NUM_INSTRUMENTS])
   {
     convertSequenceU16ToBool(sequence[0],hiHat);
     convertSequenceU16ToBool(sequence[1],cymbal);
